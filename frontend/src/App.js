@@ -811,6 +811,11 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [editNotes, setEditNotes] = useState('');
+  const [confirmedDate, setConfirmedDate] = useState('');
+  const [confirmedTime, setConfirmedTime] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -856,6 +861,8 @@ const AdminDashboard = () => {
           ? { ...apt, status, admin_notes: notes, confirmed_date: confirmedDate, confirmed_time: confirmedTime }
           : apt
       ));
+      setShowModal(false);
+      setSelectedAppointment(null);
     } catch (error) {
       console.error('Error updating appointment:', error);
     }
@@ -866,12 +873,35 @@ const AdminDashboard = () => {
     navigate('/admin');
   };
 
+  const openAppointmentModal = (appointment) => {
+    setSelectedAppointment(appointment);
+    setEditNotes(appointment.admin_notes || '');
+    setConfirmedDate(appointment.confirmed_date || appointment.preferred_date);
+    setConfirmedTime(appointment.confirmed_time || appointment.preferred_time);
+    setShowModal(true);
+  };
+
   const filteredAppointments = appointments.filter(apt => {
     const matchesFilter = filter === 'all' || apt.status === filter;
     const matchesSearch = apt.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         apt.email.toLowerCase().includes(searchTerm.toLowerCase());
+                         apt.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         apt.service_type.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesFilter && matchesSearch;
   });
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'pending': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+      case 'confirmed': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+      case 'completed': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
+      case 'cancelled': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+    }
+  };
+
+  const getStatsForStatus = (status) => {
+    return appointments.filter(apt => status === 'all' ? true : apt.status === status).length;
+  };
 
   if (loading) {
     return (
@@ -887,54 +917,124 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8 flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
+        {/* Header */}
+        <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
+            <p className="text-gray-600 dark:text-gray-300 mt-1">Manage appointments and customer requests</p>
+          </div>
           <button
             onClick={handleLogout}
-            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
           >
-            Logout
+            <span>🚪</span>
+            <span>Logout</span>
           </button>
         </div>
 
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
+                <span className="text-white text-sm">📊</span>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Total</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{getStatsForStatus('all')}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-yellow-600 rounded-lg flex items-center justify-center mr-3">
+                <span className="text-white text-sm">⏳</span>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Pending</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{getStatsForStatus('pending')}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center mr-3">
+                <span className="text-white text-sm">✅</span>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Confirmed</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{getStatsForStatus('confirmed')}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
+                <span className="text-white text-sm">🎯</span>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Completed</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{getStatsForStatus('completed')}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center mr-3">
+                <span className="text-white text-sm">❌</span>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Cancelled</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{getStatsForStatus('cancelled')}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Filters and Search */}
         <div className="mb-6 flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
             <input
               type="text"
-              placeholder="Search by name or email..."
+              placeholder="Search by name, email, or service..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div>
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
             >
-              <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
+              <option value="all">All Status ({getStatsForStatus('all')})</option>
+              <option value="pending">Pending ({getStatsForStatus('pending')})</option>
+              <option value="confirmed">Confirmed ({getStatsForStatus('confirmed')})</option>
+              <option value="completed">Completed ({getStatsForStatus('completed')})</option>
+              <option value="cancelled">Cancelled ({getStatsForStatus('cancelled')})</option>
             </select>
           </div>
         </div>
 
+        {/* Appointments Table */}
         <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Customer
+                    Customer Details
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Service
+                    Service & Location
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Date & Time
+                    Preferred Time
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Status
@@ -946,62 +1046,56 @@ const AdminDashboard = () => {
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredAppointments.map((appointment) => (
-                  <tr key={appointment.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900 dark:text-white">
-                        {appointment.name}
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-300">
-                        {appointment.email}
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-300">
-                        {appointment.phone}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {appointment.service_type}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      <div>{appointment.preferred_date}</div>
-                      <div>{appointment.preferred_time}</div>
-                      {appointment.confirmed_date && (
-                        <div className="text-green-600 dark:text-green-400 font-medium">
-                          Confirmed: {appointment.confirmed_date} {appointment.confirmed_time}
+                  <tr key={appointment.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td className="px-6 py-4">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          {appointment.name}
                         </div>
-                      )}
+                        <div className="text-sm text-gray-500 dark:text-gray-300">
+                          📧 {appointment.email}
+                        </div>
+                        <div className="text-sm text-gray-500 dark:text-gray-300">
+                          📱 {appointment.phone}
+                        </div>
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        appointment.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' :
-                        appointment.status === 'confirmed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
-                        appointment.status === 'completed' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' :
-                        'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-                      }`}>
+                    <td className="px-6 py-4">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          {appointment.service_type}
+                        </div>
+                        <div className="text-sm text-gray-500 dark:text-gray-300">
+                          📍 {appointment.location}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div>
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          📅 {appointment.preferred_date}
+                        </div>
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          ⏰ {appointment.preferred_time}
+                        </div>
+                        {appointment.confirmed_date && (
+                          <div className="text-sm text-green-600 dark:text-green-400 font-medium mt-1">
+                            ✅ Confirmed: {appointment.confirmed_date} {appointment.confirmed_time}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full capitalize ${getStatusColor(appointment.status)}`}>
                         {appointment.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                      {appointment.status === 'pending' && (
-                        <button
-                          onClick={() => handleStatusUpdate(appointment.id, 'confirmed')}
-                          className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
-                        >
-                          Confirm
-                        </button>
-                      )}
-                      {appointment.status === 'confirmed' && (
-                        <button
-                          onClick={() => handleStatusUpdate(appointment.id, 'completed')}
-                          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                        >
-                          Complete
-                        </button>
-                      )}
+                    <td className="px-6 py-4 text-sm font-medium space-x-2">
                       <button
-                        onClick={() => handleStatusUpdate(appointment.id, 'cancelled')}
-                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                        onClick={() => openAppointmentModal(appointment)}
+                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-900 px-3 py-1 rounded-md transition-colors"
                       >
-                        Cancel
+                        📝 Manage
                       </button>
                     </td>
                   </tr>
@@ -1013,7 +1107,145 @@ const AdminDashboard = () => {
 
         {filteredAppointments.length === 0 && (
           <div className="text-center py-8">
-            <p className="text-gray-500 dark:text-gray-400">No appointments found.</p>
+            <p className="text-gray-500 dark:text-gray-400">No appointments found matching your criteria.</p>
+          </div>
+        )}
+
+        {/* Appointment Management Modal */}
+        {showModal && selectedAppointment && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-screen overflow-y-auto">
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Manage Appointment - {selectedAppointment.name}
+                  </h3>
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Customer Info */}
+                  <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-2">Customer Information</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p><strong>Name:</strong> {selectedAppointment.name}</p>
+                        <p><strong>Email:</strong> {selectedAppointment.email}</p>
+                        <p><strong>Phone:</strong> {selectedAppointment.phone}</p>
+                      </div>
+                      <div>
+                        <p><strong>Service:</strong> {selectedAppointment.service_type}</p>
+                        <p><strong>Location:</strong> {selectedAppointment.location}</p>
+                        <p><strong>Status:</strong> <span className={`px-2 py-1 rounded text-xs ${getStatusColor(selectedAppointment.status)}`}>{selectedAppointment.status}</span></p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  {selectedAppointment.description && (
+                    <div>
+                      <h4 className="font-medium text-gray-900 dark:text-white mb-2">Customer Description</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                        {selectedAppointment.description}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Appointment Time */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Confirmed Date
+                      </label>
+                      <input
+                        type="date"
+                        value={confirmedDate}
+                        onChange={(e) => setConfirmedDate(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Confirmed Time
+                      </label>
+                      <select
+                        value={confirmedTime}
+                        onChange={(e) => setConfirmedTime(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      >
+                        <option value="09:00">9:00 AM</option>
+                        <option value="10:00">10:00 AM</option>
+                        <option value="11:00">11:00 AM</option>
+                        <option value="12:00">12:00 PM</option>
+                        <option value="13:00">1:00 PM</option>
+                        <option value="14:00">2:00 PM</option>
+                        <option value="15:00">3:00 PM</option>
+                        <option value="16:00">4:00 PM</option>
+                        <option value="17:00">5:00 PM</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Admin Notes */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Admin Notes
+                    </label>
+                    <textarea
+                      value={editNotes}
+                      onChange={(e) => setEditNotes(e.target.value)}
+                      rows="3"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      placeholder="Add notes about this appointment..."
+                    />
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-wrap gap-2 pt-4">
+                    {selectedAppointment.status === 'pending' && (
+                      <button
+                        onClick={() => handleStatusUpdate(selectedAppointment.id, 'confirmed', editNotes, confirmedDate, confirmedTime)}
+                        className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+                      >
+                        <span>✅</span>
+                        <span>Confirm Appointment</span>
+                      </button>
+                    )}
+                    
+                    {selectedAppointment.status === 'confirmed' && (
+                      <button
+                        onClick={() => handleStatusUpdate(selectedAppointment.id, 'completed', editNotes, confirmedDate, confirmedTime)}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                      >
+                        <span>🎯</span>
+                        <span>Mark Complete</span>
+                      </button>
+                    )}
+                    
+                    <button
+                      onClick={() => handleStatusUpdate(selectedAppointment.id, 'cancelled', editNotes)}
+                      className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
+                    >
+                      <span>❌</span>
+                      <span>Cancel</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => handleStatusUpdate(selectedAppointment.id, selectedAppointment.status, editNotes, confirmedDate, confirmedTime)}
+                      className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2"
+                    >
+                      <span>💾</span>
+                      <span>Save Notes</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
