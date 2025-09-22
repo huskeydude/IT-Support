@@ -13,6 +13,8 @@ from datetime import datetime, timezone, date, time
 import hashlib
 import json
 import base64
+import requests
+import asyncio
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
