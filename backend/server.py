@@ -358,12 +358,14 @@ async def update_appointment(appointment_id: str, update_data: AppointmentUpdate
         if result.modified_count:
             updated_appointment = await db.appointments.find_one({"id": appointment_id})
             if updated_appointment:
-                # If appointment is confirmed, trigger calendar and email
+                appointment_obj = Appointment(**parse_from_mongo(updated_appointment))
+                
+                # Send confirmation email when appointment is confirmed
                 if update_data.status == "confirmed":
-                    # TODO: Add Google Calendar integration
-                    # TODO: Add email confirmation
-                    pass
-                return Appointment(**parse_from_mongo(updated_appointment))
+                    subject, html_content, text_content = generate_appointment_confirmation_email(appointment_obj)
+                    await send_mailgun_email(appointment_obj.email, subject, html_content, text_content)
+                
+                return appointment_obj
         
         raise HTTPException(status_code=404, detail="Appointment not found")
     except HTTPException:
