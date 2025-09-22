@@ -292,6 +292,9 @@ const Home = () => {
                 <div>
                   <h4 className="font-semibold text-gray-900 dark:text-white">John Doe</h4>
                   <p className="text-gray-600 dark:text-gray-300 text-sm">Small Business Owner</p>
+                  <div className="flex text-yellow-400 text-sm">
+                    ⭐⭐⭐⭐⭐
+                  </div>
                 </div>
               </div>
               <p className="text-gray-600 dark:text-gray-300 italic">
@@ -307,6 +310,9 @@ const Home = () => {
                 <div>
                   <h4 className="font-semibold text-gray-900 dark:text-white">Sarah Miller</h4>
                   <p className="text-gray-600 dark:text-gray-300 text-sm">Home User</p>
+                  <div className="flex text-yellow-400 text-sm">
+                    ⭐⭐⭐⭐⭐
+                  </div>
                 </div>
               </div>
               <p className="text-gray-600 dark:text-gray-300 italic">
