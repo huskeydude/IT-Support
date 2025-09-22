@@ -133,8 +133,17 @@ const Footer = () => {
           </div>
         </div>
         
-        <div className="border-t border-gray-700 mt-8 pt-8 text-center text-sm text-gray-400">
-          <p>&copy; 2024 Summit IT Services. All rights reserved.</p>
+        <div className="border-t border-gray-700 mt-8 pt-8 flex justify-between items-center">
+          <p className="text-sm text-gray-400">
+            &copy; 2024 Summit IT Services. All rights reserved.
+          </p>
+          <Link
+            to="/admin"
+            className="text-gray-500 hover:text-gray-300 transition-colors"
+            title="Admin Access"
+          >
+            <span className="text-lg">⚙️</span>
+          </Link>
         </div>
       </div>
     </footer>
