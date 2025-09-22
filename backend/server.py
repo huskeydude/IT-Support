@@ -226,10 +226,10 @@ async def get_services():
             "icon": "🏢"
         },
         {
-            "id": "data-recovery", 
-            "name": "Data Recovery",
-            "description": "Professional data recovery services for hard drives, SSDs, and other storage devices.",
-            "icon": "💾"
+            "id": "general-consult", 
+            "name": "General Consultation",
+            "description": "Expert IT consultation and advice for your technology needs and planning.",
+            "icon": "💡"
         }
     ]
     return services
