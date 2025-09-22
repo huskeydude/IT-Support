@@ -323,6 +323,10 @@ async def create_appointment(appointment_data: AppointmentCreate):
         
         result = await db.appointments.insert_one(appointment_dict)
         if result.inserted_id:
+            # Send confirmation email to customer
+            subject, html_content, text_content = generate_appointment_request_email(appointment)
+            await send_mailgun_email(appointment.email, subject, html_content, text_content)
+            
             return appointment
         raise HTTPException(status_code=500, detail="Failed to create appointment")
     except Exception as e:
