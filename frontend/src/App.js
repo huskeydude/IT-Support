@@ -1207,40 +1207,69 @@ const AdminDashboard = () => {
 
                   {/* Action Buttons */}
                   <div className="flex flex-wrap gap-2 pt-4">
-                    {selectedAppointment.status === 'pending' && (
-                      <button
-                        onClick={() => handleStatusUpdate(selectedAppointment.id, 'confirmed', editNotes, confirmedDate, confirmedTime)}
-                        className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
-                      >
-                        <span>✅</span>
-                        <span>Confirm Appointment</span>
-                      </button>
-                    )}
+                    {/* Status Change Buttons - Always show all options */}
+                    <div className="w-full mb-4">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Change Status:
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => handleStatusUpdate(selectedAppointment.id, 'pending', editNotes, confirmedDate, confirmedTime)}
+                          className={`px-4 py-2 rounded-lg transition-colors flex items-center space-x-2 ${
+                            selectedAppointment.status === 'pending' 
+                              ? 'bg-yellow-200 text-yellow-800' 
+                              : 'bg-yellow-600 text-white hover:bg-yellow-700'
+                          }`}
+                        >
+                          <span>⏳</span>
+                          <span>Set Pending</span>
+                        </button>
+                        
+                        <button
+                          onClick={() => handleStatusUpdate(selectedAppointment.id, 'confirmed', editNotes, confirmedDate, confirmedTime)}
+                          className={`px-4 py-2 rounded-lg transition-colors flex items-center space-x-2 ${
+                            selectedAppointment.status === 'confirmed' 
+                              ? 'bg-green-200 text-green-800' 
+                              : 'bg-green-600 text-white hover:bg-green-700'
+                          }`}
+                        >
+                          <span>✅</span>
+                          <span>Confirm</span>
+                        </button>
+                        
+                        <button
+                          onClick={() => handleStatusUpdate(selectedAppointment.id, 'completed', editNotes, confirmedDate, confirmedTime)}
+                          className={`px-4 py-2 rounded-lg transition-colors flex items-center space-x-2 ${
+                            selectedAppointment.status === 'completed' 
+                              ? 'bg-blue-200 text-blue-800' 
+                              : 'bg-blue-600 text-white hover:bg-blue-700'
+                          }`}
+                        >
+                          <span>🎯</span>
+                          <span>Complete</span>
+                        </button>
+                        
+                        <button
+                          onClick={() => handleStatusUpdate(selectedAppointment.id, 'cancelled', editNotes, confirmedDate, confirmedTime)}
+                          className={`px-4 py-2 rounded-lg transition-colors flex items-center space-x-2 ${
+                            selectedAppointment.status === 'cancelled' 
+                              ? 'bg-red-200 text-red-800' 
+                              : 'bg-red-600 text-white hover:bg-red-700'
+                          }`}
+                        >
+                          <span>❌</span>
+                          <span>Cancel</span>
+                        </button>
+                      </div>
+                    </div>
                     
-                    {selectedAppointment.status === 'confirmed' && (
-                      <button
-                        onClick={() => handleStatusUpdate(selectedAppointment.id, 'completed', editNotes, confirmedDate, confirmedTime)}
-                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-                      >
-                        <span>🎯</span>
-                        <span>Mark Complete</span>
-                      </button>
-                    )}
-                    
-                    <button
-                      onClick={() => handleStatusUpdate(selectedAppointment.id, 'cancelled', editNotes)}
-                      className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
-                    >
-                      <span>❌</span>
-                      <span>Cancel</span>
-                    </button>
-                    
+                    {/* Save Notes Button */}
                     <button
                       onClick={() => handleStatusUpdate(selectedAppointment.id, selectedAppointment.status, editNotes, confirmedDate, confirmedTime)}
                       className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2"
                     >
                       <span>💾</span>
-                      <span>Save Notes</span>
+                      <span>Save Notes & Time</span>
                     </button>
                   </div>
                 </div>
