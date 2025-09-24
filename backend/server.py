@@ -58,7 +58,7 @@ security = HTTPBearer()
 # Models
 class AppointmentCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=48, description="Customer name (max 48 characters)")
-    email: str = Field(..., regex=r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', description="Valid email address")
+    email: str = Field(..., pattern=r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', description="Valid email address")
     phone: str = Field(..., min_length=10, max_length=20, description="Valid phone number")
     service_type: str = Field(..., min_length=1, max_length=100, description="Service type")
     location: str = Field(..., min_length=1, max_length=200, description="Service location")
