@@ -86,14 +86,14 @@ class AppointmentCreate(BaseModel):
 
 class Appointment(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    name: str
+    name: str = Field(..., min_length=1, max_length=48)
     email: str
-    phone: str
+    phone: str = Field(..., min_length=10, max_length=20)
     service_type: str
-    location: str
+    location: str = Field(..., max_length=200)
     preferred_date: str
     preferred_time: str
-    description: Optional[str] = ""
+    description: Optional[str] = Field("", max_length=1024)
     status: str = "pending"  # pending, confirmed, completed, cancelled
     admin_notes: Optional[str] = ""
     confirmed_date: Optional[str] = None
