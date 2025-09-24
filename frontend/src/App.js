@@ -954,6 +954,7 @@ const AdminDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [editNotes, setEditNotes] = useState('');
   const [confirmedDate, setConfirmedDate] = useState('');
   const [confirmedTime, setConfirmedTime] = useState('');
@@ -1009,6 +1010,21 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleDeleteConfirm = async (appointmentId) => {
+    const token = localStorage.getItem('adminToken');
+    try {
+      await axios.delete(`${API}/appointments/${appointmentId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setAppointments(appointments.filter(apt => apt.id !== appointmentId));
+      setShowDeleteConfirm(null);
+    } catch (error) {
+      console.error('Error deleting appointment:', error);
+      alert('Failed to delete appointment. Please try again.');
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('adminToken');
     navigate('/admin');
@@ -1020,6 +1036,37 @@ const AdminDashboard = () => {
     setConfirmedDate(appointment.confirmed_date || appointment.preferred_date);
     setConfirmedTime(appointment.confirmed_time || appointment.preferred_time);
     setShowModal(true);
+  };
+
+  const getTimeAgo = (dateString) => {
+    const now = new Date();
+    const past = new Date(dateString);
+    const diffMs = now - past;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} min${diffMins !== 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+    if (diffDays < 30) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+    return past.toLocaleDateString();
+  };
+
+  const formatDateTime = (dateString) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch {
+      return 'Invalid date';
+    }
   };
 
   const filteredAppointments = appointments.filter(apt => {
@@ -1175,7 +1222,10 @@ const AdminDashboard = () => {
                     Service & Location
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Preferred Time
+                    Appointment Time
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Submitted
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Status
@@ -1227,17 +1277,35 @@ const AdminDashboard = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
+                      <div>
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {formatDateTime(appointment.created_at)}
+                        </div>
+                        <div className="text-sm text-gray-500 dark:text-gray-300">
+                          {getTimeAgo(appointment.created_at)}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
                       <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full capitalize ${getStatusColor(appointment.status)}`}>
                         {appointment.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm font-medium space-x-2">
-                      <button
-                        onClick={() => openAppointmentModal(appointment)}
-                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-900 px-3 py-1 rounded-md transition-colors"
-                      >
-                        📝 Manage
-                      </button>
+                    <td className="px-6 py-4 text-sm font-medium space-y-2">
+                      <div className="flex flex-col gap-2">
+                        <button
+                          onClick={() => openAppointmentModal(appointment)}
+                          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-900 px-3 py-1 rounded-md transition-colors text-sm"
+                        >
+                          📝 Manage
+                        </button>
+                        <button
+                          onClick={() => setShowDeleteConfirm(appointment.id)}
+                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 bg-red-50 dark:bg-red-900 px-3 py-1 rounded-md transition-colors text-sm"
+                        >
+                          🗑️ Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -1249,6 +1317,34 @@ const AdminDashboard = () => {
         {filteredAppointments.length === 0 && (
           <div className="text-center py-8">
             <p className="text-gray-500 dark:text-gray-400">No appointments found matching your criteria.</p>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Confirm Delete
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300 mb-6">
+                Are you sure you want to delete this appointment? This action cannot be undone.
+              </p>
+              <div className="flex gap-4 justify-end">
+                <button
+                  onClick={() => setShowDeleteConfirm(null)}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleDeleteConfirm(showDeleteConfirm)}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -1284,6 +1380,9 @@ const AdminDashboard = () => {
                         <p><strong>Location:</strong> {selectedAppointment.location}</p>
                         <p><strong>Status:</strong> <span className={`px-2 py-1 rounded text-xs ${getStatusColor(selectedAppointment.status)}`}>{selectedAppointment.status}</span></p>
                       </div>
+                    </div>
+                    <div className="mt-2 text-sm">
+                      <p><strong>Submitted:</strong> {formatDateTime(selectedAppointment.created_at)} ({getTimeAgo(selectedAppointment.created_at)})</p>
                     </div>
                   </div>
 
