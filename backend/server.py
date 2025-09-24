@@ -6,7 +6,8 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field
+import re
+from pydantic import BaseModel, Field, validator
 from typing import List, Optional
 import uuid
 from datetime import datetime, timezone, date, time
@@ -18,6 +19,27 @@ import asyncio
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
+
+# Validation functions
+def validate_ascii_text(text: str) -> str:
+    """Validate that text contains only ASCII characters"""
+    if not text.isascii():
+        raise ValueError("Text must contain only ASCII characters")
+    return text.strip()
+
+def validate_phone_number(phone: str) -> str:
+    """Validate phone number format"""
+    # Remove all non-digit characters except + and spaces
+    cleaned = re.sub(r'[^\d\+\-\(\)\s]', '', phone)
+    
+    # Check if it's a valid phone number pattern
+    # Supports formats like: +1234567890, (123) 456-7890, 123-456-7890, 123 456 7890
+    phone_pattern = r'^[\+]?[\d\-\(\)\s]{10,20}$'
+    
+    if not re.match(phone_pattern, cleaned):
+        raise ValueError("Invalid phone number format")
+    
+    return cleaned.strip()
 
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
