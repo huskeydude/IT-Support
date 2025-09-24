@@ -505,6 +505,7 @@ const Appointments = () => {
   const [services, setServices] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState('');
+  const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
     const fetchServices = async () => {
@@ -518,15 +519,103 @@ const Appointments = () => {
     fetchServices();
   }, []);
 
+  const validateForm = () => {
+    const errors = {};
+
+    // Name validation
+    if (!formData.name.trim()) {
+      errors.name = 'Name is required';
+    } else if (formData.name.length > 48) {
+      errors.name = 'Name must be 48 characters or less';
+    } else if (!/^[\x00-\x7F]*$/.test(formData.name)) {
+      errors.name = 'Name must contain only standard characters';
+    }
+
+    // Email validation
+    if (!formData.email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+
+    // Phone validation
+    if (!formData.phone.trim()) {
+      errors.phone = 'Phone number is required';
+    } else if (!/^[\+]?[\d\-\(\)\s]{10,20}$/.test(formData.phone)) {
+      errors.phone = 'Please enter a valid phone number (10-20 digits)';
+    }
+
+    // Service type validation
+    if (!formData.service_type) {
+      errors.service_type = 'Please select a service type';
+    }
+
+    // Location validation
+    if (!formData.location.trim()) {
+      errors.location = 'Location is required';
+    } else if (formData.location.length > 200) {
+      errors.location = 'Location must be 200 characters or less';
+    } else if (!/^[\x00-\x7F]*$/.test(formData.location)) {
+      errors.location = 'Location must contain only standard characters';
+    }
+
+    // Date validation
+    if (!formData.preferred_date) {
+      errors.preferred_date = 'Preferred date is required';
+    }
+
+    // Time validation
+    if (!formData.preferred_time) {
+      errors.preferred_time = 'Preferred time is required';
+    }
+
+    // Description validation (optional but limited)
+    if (formData.description && formData.description.length > 1024) {
+      errors.description = 'Description must be 1024 characters or less';
+    } else if (formData.description && !/^[\x00-\x7F]*$/.test(formData.description)) {
+      errors.description = 'Description must contain only standard characters';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Apply character limits as user types
+    let sanitizedValue = value;
+    
+    if (name === 'name' && value.length > 48) {
+      sanitizedValue = value.substring(0, 48);
+    } else if (name === 'location' && value.length > 200) {
+      sanitizedValue = value.substring(0, 200);
+    } else if (name === 'description' && value.length > 1024) {
+      sanitizedValue = value.substring(0, 1024);
+    }
+
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: sanitizedValue
     });
+
+    // Clear specific field error when user starts typing
+    if (formErrors[name]) {
+      setFormErrors({
+        ...formErrors,
+        [name]: ''
+      });
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      setSubmitMessage('Please correct the errors below and try again.');
+      return;
+    }
+
     setIsSubmitting(true);
     setSubmitMessage('');
 
@@ -544,10 +633,15 @@ const Appointments = () => {
           preferred_time: '',
           description: ''
         });
+        setFormErrors({});
       }
     } catch (error) {
       console.error('Error submitting appointment:', error);
-      setSubmitMessage('Error submitting appointment. Please try again or contact us directly.');
+      if (error.response?.status === 422) {
+        setSubmitMessage('Please check your input and try again. Make sure all fields are properly filled.');
+      } else {
+        setSubmitMessage('Error submitting appointment. Please try again or contact us directly.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -570,7 +664,7 @@ const Appointments = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Name *
+                  Name * <span className="text-xs text-gray-500">({formData.name.length}/48)</span>
                 </label>
                 <input
                   type="text"
@@ -578,8 +672,14 @@ const Appointments = () => {
                   value={formData.name}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  maxLength="48"
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 dark:bg-gray-700 dark:text-white ${
+                    formErrors.name 
+                      ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
+                      : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500'
+                  }`}
                 />
+                {formErrors.name && <p className="text-red-500 text-xs mt-1">{formErrors.name}</p>}
               </div>
               
               <div>
@@ -592,8 +692,13 @@ const Appointments = () => {
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 dark:bg-gray-700 dark:text-white ${
+                    formErrors.email 
+                      ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
+                      : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500'
+                  }`}
                 />
+                {formErrors.email && <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>}
               </div>
             </div>
 
@@ -608,8 +713,14 @@ const Appointments = () => {
                   value={formData.phone}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  placeholder="(123) 456-7890"
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 dark:bg-gray-700 dark:text-white ${
+                    formErrors.phone 
+                      ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
+                      : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500'
+                  }`}
                 />
+                {formErrors.phone && <p className="text-red-500 text-xs mt-1">{formErrors.phone}</p>}
               </div>
               
               <div>
@@ -621,7 +732,11 @@ const Appointments = () => {
                   value={formData.service_type}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 dark:bg-gray-700 dark:text-white ${
+                    formErrors.service_type 
+                      ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
+                      : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500'
+                  }`}
                 >
                   <option value="">Select a service</option>
                   {services.map((service) => (
@@ -630,12 +745,13 @@ const Appointments = () => {
                     </option>
                   ))}
                 </select>
+                {formErrors.service_type && <p className="text-red-500 text-xs mt-1">{formErrors.service_type}</p>}
               </div>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Location *
+                Location * <span className="text-xs text-gray-500">({formData.location.length}/200)</span>
               </label>
               <input
                 type="text"
@@ -643,9 +759,15 @@ const Appointments = () => {
                 value={formData.location}
                 onChange={handleChange}
                 required
+                maxLength="200"
                 placeholder="Your address or service location"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 dark:bg-gray-700 dark:text-white ${
+                  formErrors.location 
+                    ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
+                    : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500'
+                }`}
               />
+              {formErrors.location && <p className="text-red-500 text-xs mt-1">{formErrors.location}</p>}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -660,8 +782,13 @@ const Appointments = () => {
                   onChange={handleChange}
                   required
                   min={new Date().toISOString().split('T')[0]}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 dark:bg-gray-700 dark:text-white ${
+                    formErrors.preferred_date 
+                      ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
+                      : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500'
+                  }`}
                 />
+                {formErrors.preferred_date && <p className="text-red-500 text-xs mt-1">{formErrors.preferred_date}</p>}
               </div>
               
               <div>
@@ -673,7 +800,11 @@ const Appointments = () => {
                   value={formData.preferred_time}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 dark:bg-gray-700 dark:text-white ${
+                    formErrors.preferred_time 
+                      ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
+                      : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500'
+                  }`}
                 >
                   <option value="">Select a time</option>
                   <option value="09:00">9:00 AM</option>
@@ -686,25 +817,35 @@ const Appointments = () => {
                   <option value="16:00">4:00 PM</option>
                   <option value="17:00">5:00 PM</option>
                 </select>
+                {formErrors.preferred_time && <p className="text-red-500 text-xs mt-1">{formErrors.preferred_time}</p>}
               </div>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Description (Optional)
+                Describe Your Issue (Optional) <span className="text-xs text-gray-500">({formData.description.length}/1024)</span>
               </label>
               <textarea
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
                 rows="4"
+                maxLength="1024"
                 placeholder="Please describe your issue or requirements in detail..."
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 dark:bg-gray-700 dark:text-white ${
+                  formErrors.description 
+                    ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
+                    : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500'
+                }`}
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Character limit: 1024. Only standard characters allowed.
+              </p>
+              {formErrors.description && <p className="text-red-500 text-xs mt-1">{formErrors.description}</p>}
             </div>
 
             {submitMessage && (
-              <div className={`p-4 rounded-md ${submitMessage.includes('Error') ? 'bg-red-50 dark:bg-red-900 text-red-700 dark:text-red-300' : 'bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-300'}`}>
+              <div className={`p-4 rounded-md ${submitMessage.includes('Error') || submitMessage.includes('correct') ? 'bg-red-50 dark:bg-red-900 text-red-700 dark:text-red-300' : 'bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-300'}`}>
                 {submitMessage}
               </div>
             )}
