@@ -1263,16 +1263,32 @@ const AdminDashboard = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div>
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          📅 {appointment.preferred_date}
-                        </div>
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          ⏰ {appointment.preferred_time}
-                        </div>
-                        {appointment.confirmed_date && (
-                          <div className="text-sm text-green-600 dark:text-green-400 font-medium mt-1">
-                            ✅ Confirmed: {appointment.confirmed_date} {appointment.confirmed_time}
-                          </div>
+                        {appointment.confirmed_date ? (
+                          // Show confirmed time
+                          <>
+                            <div className="text-sm text-green-600 dark:text-green-400 font-medium">
+                              ✅ Confirmed Time:
+                            </div>
+                            <div className="text-sm text-gray-900 dark:text-white">
+                              📅 {appointment.confirmed_date}
+                            </div>
+                            <div className="text-sm text-gray-900 dark:text-white">
+                              ⏰ {appointment.confirmed_time}
+                            </div>
+                          </>
+                        ) : (
+                          // Show requested time with label
+                          <>
+                            <div className="text-sm text-amber-600 dark:text-amber-400 font-medium">
+                              📋 Requested Time:
+                            </div>
+                            <div className="text-sm text-gray-900 dark:text-white">
+                              📅 {appointment.preferred_date}
+                            </div>
+                            <div className="text-sm text-gray-900 dark:text-white">
+                              ⏰ {appointment.preferred_time}
+                            </div>
+                          </>
                         )}
                       </div>
                     </td>
