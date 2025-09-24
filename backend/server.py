@@ -431,6 +431,11 @@ async def admin_login(login_data: AdminLogin):
         logging.error(f"Error during admin login: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
+@api_router.get("/admin/verify")
+async def verify_admin(admin: str = Depends(verify_admin_token)):
+    """Verify admin token"""
+    return {"message": "Token valid", "username": admin}
+
 @api_router.delete("/appointments/{appointment_id}")
 async def delete_appointment(appointment_id: str, admin: str = Depends(verify_admin_token)):
     """Delete an appointment (admin only)"""
