@@ -57,14 +57,32 @@ security = HTTPBearer()
 
 # Models
 class AppointmentCreate(BaseModel):
-    name: str
-    email: str
-    phone: str
-    service_type: str
-    location: str
-    preferred_date: str
-    preferred_time: str
-    description: Optional[str] = ""
+    name: str = Field(..., min_length=1, max_length=48, description="Customer name (max 48 characters)")
+    email: str = Field(..., regex=r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', description="Valid email address")
+    phone: str = Field(..., min_length=10, max_length=20, description="Valid phone number")
+    service_type: str = Field(..., min_length=1, max_length=100, description="Service type")
+    location: str = Field(..., min_length=1, max_length=200, description="Service location")
+    preferred_date: str = Field(..., description="Preferred appointment date")
+    preferred_time: str = Field(..., description="Preferred appointment time")
+    description: Optional[str] = Field("", max_length=1024, description="Issue description (max 1024 characters)")
+
+    @validator('name')
+    def validate_name(cls, v):
+        return validate_ascii_text(v)
+
+    @validator('phone')
+    def validate_phone_format(cls, v):
+        return validate_phone_number(v)
+
+    @validator('service_type', 'location')
+    def validate_ascii_fields(cls, v):
+        return validate_ascii_text(v)
+
+    @validator('description')
+    def validate_description(cls, v):
+        if v:
+            return validate_ascii_text(v)
+        return v
 
 class Appointment(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
